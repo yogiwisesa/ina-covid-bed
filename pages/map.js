@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef, useMemo } from 'react'
-import { Spinner } from '@chakra-ui/react'
+import { useEffect, useState, useMemo } from 'react'
+import { Spinner, useColorMode } from '@chakra-ui/react'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import 'react-spring-bottom-sheet/dist/style.css'
 import { BottomSheet } from 'react-spring-bottom-sheet'
@@ -7,7 +7,7 @@ import { NextSeo } from 'next-seo'
 import SEO from 'next-seo.config'
 import { Box, VStack, HStack, Text } from '@chakra-ui/react'
 
-import mapboxgl from '!mapbox-gl'
+import ReactMapboxGl, { Marker, Popup } from 'react-mapbox-gl'
 
 import HospitalCard from '@/components/HospitalCard'
 import SearchProvince from '@/components/SearchProvince'
@@ -15,15 +15,28 @@ import useHospitalDataByProvince from '@/hooks/useHospitalDataByProvince'
 import { provincesWithCities } from '@/utils/constants'
 import { getNearestProvinces } from '@/utils/LocationHelper'
 
-mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX
+const Map = ReactMapboxGl({
+  accessToken: process.env.NEXT_PUBLIC_MAPBOX,
+})
 
-export default function Map() {
-  const mapContainer = useRef(null)
-  const map = useRef(null)
-  const [lng] = useState(115.212631)
-  const [lat] = useState(-8.670458)
-  const [zoom] = useState(9)
+const Mark = () => (
+  <Box
+    bg="red"
+    borderColor="red.200"
+    borderRadius="50%"
+    borderStyle="solid"
+    borderWidth="4px"
+    height="20px"
+    width="20px"
+  />
+)
+
+export default function MapPage() {
+  const [map, setMap] = useState(null)
+  const [activeLoc, setActiveLoc] = useState(undefined)
   const [alternativeProvinces, setAlternativeProvinces] = useState([])
+  const { colorMode } = useColorMode()
+  const isDarkMode = colorMode === 'dark'
 
   const [province, setProvince] = useState({
     value: 'jakarta',
@@ -39,31 +52,20 @@ export default function Map() {
   const [popupHospital, setPopupHospitalVisibility] = useState(false)
   const [isSearchingGeo, setSearchingGeo] = useState(false)
 
-  useEffect(() => {
-    if (map.current) return // initialize map only once
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v11',
-      center: [lng, lat],
-      zoom: zoom,
-    })
-
-    map.current.on('load', function () {
-      map.current.resize()
-      updateMap()
-    })
-  })
-
-  useEffect(() => {
-    updateMap()
-  }, [hospitalList])
-
   const handleChooseProvince = (province) => {
     setProvince({ value: province.value, label: province.name })
     setAlternativeProvinces([])
   }
 
+  useEffect(() => {
+    if (hospitalList?.length) {
+      handleSearchGeo()
+    }
+  }, [hospitalList])
+
   const handleSearchGeo = () => {
+    alert(map.loaded())
+    if (!map || !map.loaded()) return
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords
@@ -79,17 +81,11 @@ export default function Map() {
           value: nearestProvinces[0].value,
         })
         setAlternativeProvinces(nearestProvinces.slice(1, 3))
-        map.current.flyTo({
-          center: {
-            lat: latitude,
-            lng: longitude,
-          },
+
+        map.flyTo({
+          center: { lat: parseFloat(latitude), lng: parseFloat(longitude) },
           zoom: 12,
         })
-
-        new mapboxgl.Marker()
-          .setLngLat([longitude, latitude])
-          .addTo(map.current)
       },
       (err) => {
         setSearchingGeo(false)
@@ -99,8 +95,8 @@ export default function Map() {
 
   const handleHospitalClick = (hospital) => {
     setPopupHospitalVisibility(false)
-    map.current.flyTo({
-      center: [parseFloat(hospital.lon), parseFloat(hospital.lat)],
+    map.flyTo({
+      center: { lat: parseFloat(hospital.lat), lng: parseFloat(hospital.lon) },
       zoom: 12,
     })
   }
@@ -110,83 +106,7 @@ export default function Map() {
     [hospitalList]
   )
 
-  const updateMap = () => {
-    if (!availableHospital?.length || !map.current.isStyleLoaded()) return
-
-    map.current.flyTo({
-      center: [
-        parseFloat(availableHospital[0]?.lon),
-        parseFloat(availableHospital[0]?.lat),
-      ],
-      zoom: 12,
-    })
-
-    const id = Math.random() * 100000000000
-
-    const features = availableHospital.map((hospital) => ({
-      type: 'Feature',
-      properties: {
-        description: `<strong>${hospital.name}</strong>
-        <p>Tempat tidur tersedia: ${hospital.available_bed} | Antrian: ${hospital.bed_queue}</p>
-        <p>Hotline: ${hospital.hotline} | <a href="${hospital.bed_detail_link}" target="_blank">Detail</a></p>
-        <p style="margin-top: .5rem">${hospital.address}</p>`,
-        icon: 'hospital-15',
-      },
-      geometry: {
-        type: 'Point',
-        coordinates: [parseFloat(hospital.lon), parseFloat(hospital.lat)],
-      },
-    }))
-    map.current.addSource(`places-${id}`, {
-      // This GeoJSON contains features that include an "icon"
-      // property. The value of the "icon" property corresponds
-      // to an image in the Mapbox Streets style's sprite.
-      type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features,
-      },
-    })
-    // Add a layer showing the places.
-    map.current.addLayer({
-      id: `places-${id}`,
-      type: 'symbol',
-      source: `places-${id}`,
-      layout: {
-        'icon-image': '{icon}',
-        'icon-allow-overlap': true,
-      },
-    })
-
-    // When a click event occurs on a feature in the places layer, open a popup at the
-    // location of the feature, with description HTML from its properties.
-    map.current.on('click', `places-${id}`, function (e) {
-      var coordinates = e.features[0].geometry.coordinates.slice()
-      var description = e.features[0].properties.description
-
-      // Ensure that if the map is zoomed out such that multiple
-      // copies of the feature are visible, the popup appears
-      // over the copy being pointed to.
-      while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360
-      }
-
-      new mapboxgl.Popup()
-        .setLngLat(coordinates)
-        .setHTML(description)
-        .addTo(map.current)
-    })
-
-    // Change the cursor to a pointer when the mouse is over the places layer.
-    map.current.on('mouseenter', `places-${id}`, function () {
-      map.current.getCanvas().style.cursor = 'pointer'
-    })
-
-    // Change it back to a pointer when it leaves.
-    map.current.on('mouseleave', `places-${id}`, function () {
-      map.current.getCanvas().style.cursor = ''
-    })
-  }
+  const jakartaLatLng = { lat: -6.163088, lng: 106.836715 }
 
   return (
     <Box position="relative" color="black">
@@ -213,7 +133,75 @@ export default function Map() {
         height="calc(100vh - 70px)"
         overflow="hidden"
       >
-        <Box ref={mapContainer} height="100%" width="100%" />
+        <Map
+          containerStyle={{
+            height: '100vh',
+            width: '100%',
+          }}
+          onDrag={() => setActiveLoc(undefined)}
+          onStyleLoad={(loadedMap) => {
+            setMap(loadedMap)
+            loadedMap.setCenter(jakartaLatLng)
+          }}
+          style="mapbox://styles/mapbox/streets-v11"
+        >
+          {availableHospital?.map((hospital, i) => {
+            return (
+              <Marker
+                key={i}
+                coordinates={{
+                  lat: parseFloat(hospital.lat),
+                  lng: parseFloat(hospital.lon),
+                }}
+              >
+                <Box
+                  onClick={() => {
+                    setActiveLoc(hospital)
+                    if (map != null) {
+                      map.easeTo({
+                        center: {
+                          lat: parseFloat(hospital.lat),
+                          lng: parseFloat(hospital.lon),
+                        },
+                      })
+                    }
+                  }}
+                >
+                  <Mark key={i} />
+                </Box>
+              </Marker>
+            )
+          })}
+
+          {myLocation && (
+            <Marker
+              coordinates={{
+                lat: myLocation.lat,
+                lng: myLocation.lon,
+              }}
+            >
+              <Popup
+                key={activeLoc.osm_id}
+                anchor="bottom"
+                coordinates={{ lat: activeLoc.lat, lng: activeLoc.lon }}
+                style={{ marginTop: -20, padding: 0 }}
+              >
+                {JSON.stringify(activeLoc)}
+              </Popup>
+            </Marker>
+          )}
+
+          {activeLoc != undefined && (
+            <Popup
+              key={activeLoc.osm_id}
+              anchor="bottom"
+              coordinates={{ lat: activeLoc.lat, lng: activeLoc.lon }}
+              style={{ marginTop: -20, padding: 0 }}
+            >
+              {JSON.stringify(activeLoc)}
+            </Popup>
+          )}
+        </Map>
         <Box
           position="absolute"
           background="white"

@@ -22,6 +22,7 @@ specifiers:
   query-string: ^7.0.1
   react: 17.0.2
   react-dom: 17.0.2
+  react-mapbox-gl: ^5.1.1
   react-select: ^4.3.1
   react-spring-bottom-sheet: ^3.4.0
   swr: ^0.5.6
@@ -42,6 +43,7 @@ dependencies:
   query-string: 7.0.1
   react: 17.0.2
   react-dom: 17.0.2_react@17.0.2
+  react-mapbox-gl: 5.1.1_615399f6a4c9ac11faaf08f868a9042d
   react-select: 4.3.1_react-dom@17.0.2+react@17.0.2
   react-spring-bottom-sheet: 3.4.0_react-dom@17.0.2+react@17.0.2
   swr: 0.5.6_react@17.0.2
@@ -1255,6 +1257,24 @@ packages:
     resolution: {integrity: sha512-Myxw//kzromB9yWgS8qYGuGVf91oBUUJpNvy5eM50sqvmKLbKjwLxohJnkWGTeeI9v9IBMtPLxz5Gc60FIfvCA==}
     dev: true
 
+  /@turf/bbox/4.7.3:
+    resolution: {integrity: sha1-461PEKfptBtSKIDTMIMZgZkFkGc=}
+    dependencies:
+      '@turf/meta': 4.7.4
+    dev: false
+
+  /@turf/helpers/4.7.3:
+    resolution: {integrity: sha1-vDEqxDyrPFMqSDFRxMOCxWSUKek=}
+    dev: false
+
+  /@turf/meta/4.7.4:
+    resolution: {integrity: sha1-beLx6YkLj2S2aeS0fAmyCJMGOXc=}
+    dev: false
+
+  /@types/geojson/7946.0.8:
+    resolution: {integrity: sha512-1rkryxURpr6aWP7R786/UQOkJ3PcpQiWkAXBmdWc7ryFWqN6a4xfK7BtjXvFBKO9LjQ+MWQSWxYeZX1OApnArA==}
+    dev: false
+
   /@types/lodash.mergewith/4.6.6:
     resolution: {integrity: sha512-RY/8IaVENjG19rxTZu9Nukqh0W2UrYgmBj5sdns4hWRZaV8PqR7wIKHFKzvOTjo4zVRV7sVI+yFhAJql12Kfqg==}
     dependencies:
@@ -1287,6 +1307,12 @@ packages:
 
   /@types/scheduler/0.16.2:
     resolution: {integrity: sha512-hppQEBDmlwhFAXKJX2KnWLYu5yMfi91yazPb2l+lbJiwW+wdo1gNeRA+3RgNSO39WYX2euey41KEwnqesU2Jew==}
+    dev: false
+
+  /@types/supercluster/5.0.3:
+    resolution: {integrity: sha512-XMSqQEr7YDuNtFwSgaHHOjsbi0ZGL62V9Js4CW45RBuRYlNWSW/KDqN+RFFE7HdHcGhJPtN0klKvw06r9Kg7rg==}
+    dependencies:
+      '@types/geojson': 7946.0.8
     dev: false
 
   /@types/tinycolor2/1.4.2:
@@ -2025,6 +2051,10 @@ packages:
   /decode-uri-component/0.2.0:
     resolution: {integrity: sha1-6zkTMzRYd1y4TNGh+uBiEGu4dUU=}
     engines: {node: '>=0.10'}
+    dev: false
+
+  /deep-equal/1.0.1:
+    resolution: {integrity: sha1-9dJgKStmDghO/0zbyfCK0yR0SLU=}
     dev: false
 
   /deep-is/0.1.3:
@@ -4005,6 +4035,24 @@ packages:
 
   /react-is/17.0.2:
     resolution: {integrity: sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==}
+    dev: false
+
+  /react-mapbox-gl/5.1.1_615399f6a4c9ac11faaf08f868a9042d:
+    resolution: {integrity: sha512-8vGldFQf7pW8T5ZV2OOhwXoaBvfigB2F7dnhzaZ/bD5/KJzP9zprMbn0xMX95W3eqbKzGGHnwyD5DyTTwR6wGw==}
+    peerDependencies:
+      mapbox-gl: ^1.12.0
+      prop-types: ^15.6.2
+      react: ^16.11.0
+      react-dom: ^16.11.0
+    dependencies:
+      '@turf/bbox': 4.7.3
+      '@turf/helpers': 4.7.3
+      '@types/supercluster': 5.0.3
+      deep-equal: 1.0.1
+      mapbox-gl: 2.3.1
+      react: 17.0.2
+      react-dom: 17.0.2_react@17.0.2
+      supercluster: 7.1.3
     dev: false
 
   /react-refresh/0.8.3:
